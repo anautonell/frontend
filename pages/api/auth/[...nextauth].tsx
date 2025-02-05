@@ -1,73 +1,9 @@
-import type { NextApiRequest, NextApiResponse } from "next"
-import NextAuth from "next-auth"
-import Providers from "next-auth/providers"
-import Cache from "../../../lib/Cache"
-import Config from "../../../config.json"
-
-const formUser = async (token) => {
-    const userCache = new Cache("userCache", 1)
-    const cachedData = await userCache.retrieve({
-        _id: token
-    })
-
-    if (cachedData.user) return cachedData.user
-
-    const response = await fetch('https://discord.com/api/users/@me', {
-        headers: {
-            Authorization: `Bearer ${token}`
-        }
-    })
-
-    const data = await response.json()
-
-    if (!("id" in data)) {
-        return (await userCache.retrieve({_id:token})) || {}
-    }
-
-    await userCache.update({
-        _id: token
-    }, {
-        user: data
-    })
-
-    return data
-}
-
-const formGuilds = async (token) => {
-    const userCache = new Cache("userCache", 1)
-    const cachedData = await userCache.retrieve({
-        _id: token
-    })
-
-    if (cachedData.guilds) return cachedData.guilds
-
-    const response = await fetch('https://discord.com/api/users/@me/guilds', {
-        headers: {
-            Authorization: `Bearer ${token}`
-        }
-    })
-
-    const data = await response.json()
-
-    if (!data[0]) {
-        return (await userCache.retrieve({ _id: token }, true)) || []
-    }
-
-    await userCache.update({
-        _id: token
-    }, {
-        guilds: data
-    })
-
-    return data
-}
-
-export default async function auth(req: NextApiRequest, res: NextApiResponse) {
-
+export default async function auth(req, res) {
     return await NextAuth(req, res, {
         providers: [
             Providers.Discord({
-                ...Config,
+                clientId: process.env.DISCORD_CLIENT_ID,  // Use the environment variable
+                clientSecret: process.env.DISCORD_CLIENT_SECRET,  // Use the environment variable
                 scope: "identify guilds"
             })
         ],
@@ -76,7 +12,7 @@ export default async function auth(req: NextApiRequest, res: NextApiResponse) {
         },
         jwt: {
             encryption: true,
-            secret: 'd905dccfd07d4ad1c99696cf7e8bace094e3a7f16fe43cc2d4a3a11564c161db'
+            secret: process.env.NEXTAUTH_SECRET,  // Use the environment variable for JWT secret
         },
         session: {
             maxAge: 30 * 24 * 60 * 60,

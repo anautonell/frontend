@@ -1,0 +1,1 @@
+export const GetGuildIcon = (guild) => !guild.icon ? undefined : `https://cdn.discordapp.com/icons/${guild.id}/${guild.icon}.${guild.icon.startsWith("a_") ? "gif" : "png"}?size=4096`
